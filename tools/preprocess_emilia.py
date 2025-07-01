@@ -71,28 +71,22 @@ def tokenize_by_CJK_char(text: str) -> str:
 
     Example:
     input = "你好世界是 hello world 的中文"
-    output = "你 好 世 界 是 hello world 的 中 文"
+    output = ["你", "好", "世", "界", "是", "hello world", "的", "中", "文"]
     """
     pattern = re.compile(
-        r"("
-        r"[\u1100-\u11ff"
-        r"\u2e80-\ua4cf"
-        r"\ua840-\uD7AF"
-        r"\uF900-\uFAFF"
-        r"\uFE30-\uFE4F"
-        r"\uFF65-\uFFDC"
-        r"\U00020000-\U0002FFFF]"
-        r")"
+        r"([\u1100-\u11ff\u2e80-\ua4cf\ua840-\uD7AF\uF900-\uFAFF\uFE30-\uFE4F\uFF65-\uFFDC\U00020000-\U0002FFFF])"
     )
     chars = pattern.split(text.strip())
-    text = " ".join([w.strip() for w in chars if w.strip()])
-    return text
+    return [w.strip() for w in chars if w.strip()]
 
 
 def is_hangul(char):
     letters = unicodedata.normalize("NFD", char)
     return all(
-        ["\u1100" <= c <= "\u11ff" or "\u3131" <= c <= "\u318e" for c in letters]
+        [
+            "\u1100" <= c <= "\u11ff" or "\u3131" <= c <= "\u318e"
+            for c in letters
+        ]
     )
 
 
@@ -144,10 +138,14 @@ def preprocess_emilia(file_name: str, input_dir: Path, output_dir: Path):
         clean_chars = []
         for x in text:
             if is_hangul(x):
-                logging.warning(f"Delete cut with text containing Korean : {text}")
+                logging.warning(
+                    f"Delete cut with text containing Korean : {text}"
+                )
                 return False
             if is_japanese(x):
-                logging.warning(f"Delete cut with text containing Japanese : {text}")
+                logging.warning(
+                    f"Delete cut with text containing Japanese : {text}"
+                )
                 return False
             if is_chinese(x):
                 chinese.append(x)
@@ -164,7 +162,9 @@ def preprocess_emilia(file_name: str, input_dir: Path, output_dir: Path):
         words = tokenize_by_CJK_char("".join(clean_chars))
         for i in range(len(words) - 10):
             if words[i : i + 10].count(words[i]) == 10:
-                logging.warning(f"Delete cut with text with too much repeats : {text}")
+                logging.warning(
+                    f"Delete cut with text with too much repeats : {text}"
+                )
                 return False
         # word speed, 20 - 600 / minute
         if duration < len(words) / 600 * 60 or duration > len(words) / 20 * 60:
@@ -185,7 +185,9 @@ def preprocess_emilia(file_name: str, input_dir: Path, output_dir: Path):
 
 
 if __name__ == "__main__":
-    formatter = "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
+    formatter = (
+        "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
+    )
     logging.basicConfig(format=formatter, level=logging.INFO)
 
     args = get_args()
@@ -194,7 +196,9 @@ if __name__ == "__main__":
     output_dir = Path(args.dest_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    cut_files = glob.glob(f"{args.source_dir}/emilia_cuts_{args.subset}.*.jsonl.gz")
+    cut_files = glob.glob(
+        f"{args.source_dir}/emilia_cuts_{args.subset}.*.jsonl.gz"
+    )
 
     with Pool(max_workers=args.jobs) as pool:
         futures = [
